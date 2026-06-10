@@ -10,6 +10,10 @@ const base = uint64(len(alphabet)) // 63
 
 type Generator struct {}
 
+func NewGenerator() *Generator {
+	return &Generator{}
+}
+
 // Generate создаёт 10-символьный уникальный код из URL.
 // Детерминирован: один и тот же URL всегда даёт один и тот же код.
 func (g *Generator) Generate(originalURL string) string {

@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. База данных
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: shortener
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortener"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # 2. Сервис миграций (запускается 1 раз и завершается)
+  migrate:
+    image: migrate/migrate:v4.18.1
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://shortener:secret@postgres:5432/shortener?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"  # ! Важно: не перезапускать после успешного завершения
+
+  # 3. Основное приложение
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env  
+    environment:
+      - STORAGE_TYPE=${STORAGE_TYPE:-postgres}
+      - PG_DSN=postgres://shortener:secret@postgres:5432/shortener?sslmode=disable
+      - BASE_URL=http://localhost:8080
+      - PORT=:8080
+    depends_on:
+      migrate:
+        condition: service_completed_successfully  # Ждёт успешного завершения миграций
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
