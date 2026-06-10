@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
+	"strings"
 
 	"github.com/kgugunava/link-service/internal/domain"
 	"github.com/kgugunava/link-service/internal/utils"
 )
 
-var (
-	ErrInvalidURL    = errors.New("invalid original URL")
-	ErrShortNotFound = errors.New("short code not found")
-)
+const maxCollisionRetries = 3
 
 type UrlRepositoryInterface interface {
 	Save(ctx context.Context, originalUrl, shortCode string) error
@@ -21,50 +20,115 @@ type UrlRepositoryInterface interface {
 }
 
 type UrlService struct {
-	urlRepo UrlRepositoryInterface
+	urlRepo      UrlRepositoryInterface
 	urlGenerator *utils.Generator
+	logger       *slog.Logger
 }
 
-func NewUrlService(urlRepo UrlRepositoryInterface, urlGenerator *utils.Generator) *UrlService {
+func NewUrlService(urlRepo UrlRepositoryInterface, urlGenerator *utils.Generator, logger *slog.Logger) *UrlService {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &UrlService{
-		urlRepo: urlRepo,
+		urlRepo:      urlRepo,
 		urlGenerator: urlGenerator,
+		logger:       logger,
 	}
 }
 
-// Shorten валидирует URL, генерирует код и сохраняет.
-// Возвращает короткий код (без домена) или ошибку.
 func (s *UrlService) Shorten(ctx context.Context, originalUrl string) (string, error) {
+	s.logger.Debug("shorten started", "original_url", originalUrl)
+
 	if err := validateUrl(originalUrl); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrInvalidURL, err)
+		s.logger.Warn("invalid url", "original_url", originalUrl, "error", err)
+		return "", domain.ErrInvalidURL
 	}
 
-	shortCode := s.urlGenerator.Generate(originalUrl)
-
-	// Репозиторий гарантирует идемпотентность через UNIQUE(original_url)
-	if err := s.urlRepo.Save(ctx, originalUrl, shortCode); err != nil {
-		return "", fmt.Errorf("save to storage: %w", err)
+	shortCode, err := s.generateWithFallback(ctx, originalUrl)
+	if err != nil {
+		s.logger.Error("failed to generate short code", "original_url", originalUrl, "error", err)
+		return "", err
 	}
 
+	s.logger.Info("url shortened", "original_url", originalUrl, "short_code", shortCode)
 	return shortCode, nil
 }
 
-// GetOriginal возвращает оригинальный URL по короткому коду.
+// generateWithFallback generates a short code with collision retry logic
+func (s *UrlService) generateWithFallback(ctx context.Context, originalUrl string) (string, error) {
+	for attempt := 0; attempt < maxCollisionRetries; attempt++ {
+		var shortCode string
+
+		if attempt == 0 {
+			shortCode = s.urlGenerator.Generate(originalUrl)
+		} else {
+			saltedURL := fmt.Sprintf("%s#retry_%d", originalUrl, attempt)
+			shortCode = s.urlGenerator.Generate(saltedURL)
+			s.logger.Debug("retrying with salted url", "original_url", originalUrl, "attempt", attempt, "salted_url", saltedURL)
+		}
+
+		err := s.urlRepo.Save(ctx, originalUrl, shortCode)
+		if err == nil {
+			return shortCode, nil
+		}
+
+		if !isShortCodeCollision(err) {
+			return "", err
+		}
+
+		s.logger.Debug("short code collision detected, retrying", "short_code", shortCode, "attempt", attempt+1)
+	}
+
+	return "", fmt.Errorf("failed to generate unique short code after %d attempts", maxCollisionRetries)
+}
+
+// isShortCodeCollision checks if the error is due to a short_code uniqueness violation
+func isShortCodeCollision(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := err.Error()
+
+	if strings.Contains(errStr, "duplicate key value violates unique constraint") &&
+		strings.Contains(errStr, "short_code") {
+		return true
+	}
+
+	if strings.Contains(errStr, "UNIQUE constraint failed") &&
+		strings.Contains(errStr, "short_code") {
+		return true
+	}
+
+	if errors.Is(err, domain.ErrShortCodeCollision) {
+		return true
+	}
+
+	return false
+}
+
 func (s *UrlService) GetOriginal(ctx context.Context, shortCode string) (string, error) {
-	// Опционально: валидация формата shortCode перед запросом в БД
-	if !isValidShortCode(shortCode) { return "", ErrShortNotFound }
+	s.logger.Debug("get_original started", "short_code", shortCode)
+
+	if !isValidShortCode(shortCode) {
+		s.logger.Warn("invalid code format", "short_code", shortCode)
+		return "", domain.ErrInvalidCode
+	}
 
 	original, err := s.urlRepo.GetByShortCode(ctx, shortCode)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			return "", ErrShortNotFound
+			s.logger.Debug("not found", "short_code", shortCode)
+			return "", domain.ErrNotFound
 		}
-		return "", fmt.Errorf("get from storage: %w", err)
+		s.logger.Error("get failed", "short_code", shortCode, "error", err)
+		return "", err
 	}
+
+	s.logger.Info("original url retrieved", "short_code", shortCode, "original_url", original)
 	return original, nil
 }
 
-// validateUrl проверяет формат оригинальной url
 func validateUrl(raw string) error {
 	u, err := url.ParseRequestURI(raw)
 	if err != nil {
@@ -76,8 +140,6 @@ func validateUrl(raw string) error {
 	return nil
 }
 
-// isValidShortCode проверяет формат [A-Za-z0-9_]{10}
-// Можно вынести в domain или utils
 func isValidShortCode(code string) bool {
 	if len(code) != 10 {
 		return false

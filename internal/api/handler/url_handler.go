@@ -3,100 +3,114 @@ package handler
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/kgugunava/link-service/internal/api/model"
+	"github.com/kgugunava/link-service/internal/domain"
 )
 
 type URLServiceInterface interface {
-	Shorten(ctx context.Context, originalUrl string) (string, error) 
+	Shorten(ctx context.Context, originalURL string) (string, error)
 	GetOriginal(ctx context.Context, shortCode string) (string, error)
 }
 
 type URLHandler struct {
 	urlService URLServiceInterface
+	logger     *slog.Logger
 }
 
-var (
-	ErrInvalidURL = errors.New("invalid original URL")
-	ErrNotFound   = errors.New("short code not found")
-)
-
-func NewURLHandler(urlService URLServiceInterface) *URLHandler {
+func NewURLHandler(urlService URLServiceInterface, logger *slog.Logger) *URLHandler {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &URLHandler{
 		urlService: urlService,
+		logger:     logger,
 	}
 }
 
 func (h *URLHandler) Shorten(c *gin.Context) {
 	var req model.URLShortenPostRequest
 
-	// 1. Парсинг JSON-тела
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("invalid json", "error", err)
 		respondError(c, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
 		return
 	}
 
-	// 2. Валидация входных данных
 	if err := validateShortenRequest(&req); err != nil {
+		h.logger.Warn("invalid url", "url", req.URL, "error", err)
 		respondError(c, http.StatusBadRequest, "invalid_url", err.Error())
 		return
 	}
 
-		// 3. Вызов бизнес-логики
 	shortCode, err := h.urlService.Shorten(c.Request.Context(), req.URL)
 	if err != nil {
-		// Маппинг доменных ошибок сервиса в HTTP-статусы
-		if errors.Is(err, ErrInvalidURL) {
-			respondError(c, http.StatusBadRequest, "invalid_url", err.Error())
+		if h.handleServiceError(c, err, "shorten") {
 			return
 		}
-		// Любая другая ошибка (БД, генератор) → 500
+		h.logger.Error("unexpected error", "operation", "shorten", "url", req.URL, "error", err)
 		respondError(c, http.StatusInternalServerError, "internal_error", "failed to process request")
 		return
 	}
 
-	// 4. Успешный ответ (201 Created)
+	h.logger.Info("url shortened", "original_url", req.URL, "short_code", shortCode)
 	c.JSON(http.StatusCreated, model.URLShortenPostResponse{
 		ShortenURL: shortCode,
 	})
 }
 
 func (h *URLHandler) GetOriginal(c *gin.Context) {
-	// Извлекаем short_code из пути: /Ab3_xK9mLp
 	shortCode := c.Param("code")
 	if shortCode == "" {
+		h.logger.Warn("missing code parameter")
 		respondError(c, http.StatusBadRequest, "missing_code", "short code is required")
 		return
 	}
 
-	// Валидация формата короткого кода
 	if !isValidShortCode(shortCode) {
+		h.logger.Warn("invalid code format", "code", shortCode)
 		respondError(c, http.StatusBadRequest, "invalid_code", "short code must be 10 characters [A-Za-z0-9_]")
 		return
 	}
 
-	// Запрос к сервису
 	originalURL, err := h.urlService.GetOriginal(c.Request.Context(), shortCode)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
-			respondError(c, http.StatusNotFound, "not_found", "short URL not found")
+		if h.handleServiceError(c, err, "get_original") {
 			return
 		}
+		h.logger.Error("unexpected error", "operation", "get_original", "code", shortCode, "error", err)
 		respondError(c, http.StatusInternalServerError, "internal_error", "failed to resolve URL")
 		return
 	}
 
+	h.logger.Info("original url resolved", "short_code", shortCode, "original_url", originalURL)
 	c.JSON(http.StatusOK, model.URLOriginalURLGetResponse{
 		OriginalURL: originalURL,
 	})
-
 }
 
-// respondError унифицирует формат ошибок и устанавливает корректный HTTP-статус
+func (h *URLHandler) handleServiceError(c *gin.Context, err error, operation string) bool {
+	switch {
+	case errors.Is(err, domain.ErrInvalidURL):
+		h.logger.Warn("invalid url", "operation", operation, "error", err)
+		respondError(c, http.StatusBadRequest, "invalid_url", "invalid original URL")
+		return true
+
+	case errors.Is(err, domain.ErrNotFound):
+		h.logger.Debug("not found", "operation", operation, "error", err)
+		respondError(c, http.StatusNotFound, "not_found", "short URL not found")
+		return true
+
+	default:
+		return false
+	}
+}
+
 func respondError(c *gin.Context, status int, code, message string) {
 	c.JSON(status, model.ErrorResponse{
 		Error: model.ErrorResponseError{
@@ -106,19 +120,27 @@ func respondError(c *gin.Context, status int, code, message string) {
 	})
 }
 
+func respondJSON(c *gin.Context, status int, data any) {
+	c.JSON(status, data)
+}
+
 func validateShortenRequest(req *model.URLShortenPostRequest) error {
 	if req.URL == "" {
 		return errors.New("url field is required")
 	}
-	// Проверка формата через стандартную библиотеку
-	_, err := url.ParseRequestURI(req.URL)
+
+	parsed, err := url.ParseRequestURI(req.URL)
 	if err != nil {
 		return errors.New("url must be valid HTTP/HTTPS link")
 	}
+
+	if parsed.Host == "" {
+		return errors.New("url must have a valid host")
+	}
+
 	return nil
 }
 
-// isValidShortCode проверяет формат короткого кода: ровно 10 символов [A-Za-z0-9_]
 func isValidShortCode(code string) bool {
 	if len(code) != 10 {
 		return false

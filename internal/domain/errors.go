@@ -1,7 +1,10 @@
 package domain
 
-import (
-	"fmt"
-)
+import "errors"
 
-var ErrNotFound = fmt.Errorf("URL not found")
+var (
+	ErrNotFound   = errors.New("not found")
+	ErrInvalidURL = errors.New("invalid URL")
+	ErrInvalidCode = errors.New("invalid short code")
+	ErrShortCodeCollision = errors.New("short code collision")
+)
