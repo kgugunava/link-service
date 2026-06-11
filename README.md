@@ -16,9 +16,10 @@
 
 ## Архитектура
 Проект реализован на основе принципов чистой архитектуры (Clean Architecture) со следующими слоями:
-- HTTP Layer
-- Service (usecase) layer
-- Repository layer
+- Entities
+- Adapters
+- Use Cases
+- Controllers
 
 ## Структура проекта
 ```
@@ -30,11 +31,11 @@
 ├── go.mod
 ├── go.sum
 ├── internal
-│   ├── adapters       # repository layer
-│   ├── api            # transport layer
+│   ├── adapters       # repository (adapters) layer
+│   ├── api            # controllers layer
 │   ├── config         # app configuration
 │   ├── domain         # domain entities
-│   ├── service        # service layer
+│   ├── service        # service (use cases) layer
 │   └── utils          # utilities (generator for links)
 ├── load_test.js       # load test scenario via K6
 └── migrations         # database migrations
