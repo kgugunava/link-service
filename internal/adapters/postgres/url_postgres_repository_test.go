@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// setupTestDB запускает PostgreSQL в Docker и возвращает pool + cleanup
+// setupTestDB запускает PostgreSQL в Docker
 func setupTestDB(t *testing.T) (*pgxpool.Pool, func()) {
 	ctx := context.Background()
 

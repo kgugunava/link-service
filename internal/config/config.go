@@ -14,7 +14,6 @@ type Config struct {
 }
 
 // Parse считывает конфигурацию из флагов командной строки и env-переменных.
-// Приоритет: флаги > env > дефолты.
 func Parse() (*Config, error) {
 	// Флаги командной строки
 	storage := flag.String("storage", getEnv("STORAGE_TYPE", "memory"), "storage type: memory|postgres")

@@ -40,7 +40,6 @@ func (g *Generator) Generate(originalURL string) string {
 
 	result := make([]byte, codeLen)
 
-	// 1. Гарантируем наличие каждого типа символов (4 позиции)
 	positions := deterministicShuffle([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, n)
 
 	// A-Z
@@ -58,7 +57,7 @@ func (g *Generator) Generate(originalURL string) string {
 	// _
 	result[positions[3]] = alphabet[underscore]
 
-	// 2. Заполняем оставшиеся 6 позиций
+	// заполняем оставшиеся 6 позиций
 	remaining := []int{4, 5, 6, 7, 8, 9}
 	for i, idx := range remaining {
 		pos := positions[idx]

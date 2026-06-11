@@ -121,14 +121,13 @@ func TestValidateShortCode(t *testing.T) {
 		code     string
 		expected bool
 	}{
-		// Валидные коды: ровно 10 символов + присутствуют все 4 типа символов
 		{"valid mixed case", "Ab3_xK9mLp", true},
-		{"valid all types", "Aa0_BbCcDd", true},           // 10 chars: A,a,0,_,B,b,C,c,D,d
-		{"valid underscore at end", "Aa1_bcd_ef", true},   // 10 chars: A,a,1,_,b,c,d,_,e,f
-		{"valid underscore at start", "_Aa1bcdefg", true}, // 10 chars: _,A,a,1,b,c,d,e,f,g
-		{"valid minimal types", "Aa0_______", true},       // 10 chars: минимально 1 каждого типа + 6 подчеркиваний
+		{"valid all types", "Aa0_BbCcDd", true},           
+		{"valid underscore at end", "Aa1_bcd_ef", true},  
+		{"valid underscore at start", "_Aa1bcdefg", true}, 
+		{"valid minimal types", "Aa0_______", true},       
 
-		// Неверная длина
+		// неверная длина
 		{"too short", "Ab3_xK9mL", false},  // 9 символов
 		{"too long", "Ab3_xK9mLpX", false}, // 11 символов
 
@@ -184,7 +183,6 @@ func TestDeterministicShuffle(t *testing.T) {
 		items := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 		result := deterministicShuffle(items, 42)
 
-		// Check that result is a permutation of items
 		counts := make(map[int]int)
 		for _, v := range items {
 			counts[v]++

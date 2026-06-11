@@ -84,7 +84,7 @@ func TestUrlMemoryRepository_Concurrency(t *testing.T) {
 			defer wg.Done()
 			code := "Code" + string(rune('A'+id%26)) + "123456"
 			_, err := repo.GetByShortCode(ctx, code)
-			// Ожидаем либо успех, либо ErrNotFound (если Save ещё не отработал)
+			// Либо успех, либо ErrNotFound (если Save ещё не отработал)
 			if err != nil && err != domain.ErrNotFound {
 				errs <- err
 			}

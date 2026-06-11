@@ -54,7 +54,6 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 	return shortCode, nil
 }
 
-// generateWithFallback generates a short code with collision retry logic
 func (s *URLService) generateWithFallback(ctx context.Context, originalURL string) (string, error) {
 	for attempt := 0; attempt < maxCollisionRetries; attempt++ {
 		var shortCode string
@@ -82,7 +81,6 @@ func (s *URLService) generateWithFallback(ctx context.Context, originalURL strin
 	return "", fmt.Errorf("failed to generate unique short code after %d attempts", maxCollisionRetries)
 }
 
-// isShortCodeCollision checks if the error is due to a short_code uniqueness violation
 func isShortCodeCollision(err error) bool {
 	if err == nil {
 		return false

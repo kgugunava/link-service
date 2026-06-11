@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 1. База данных
   postgres:
     image: postgres:15-alpine
     environment:
@@ -17,7 +16,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # 2. Сервис миграций (запускается 1 раз и завершается)
   migrate:
     image: migrate/migrate:v4.18.1
     volumes:
@@ -30,9 +28,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: "no"  # ! Важно: не перезапускать после успешного завершения
+    restart: "no"  
 
-  # 3. Основное приложение
   app:
     build: .
     ports:
@@ -46,7 +43,7 @@ services:
       - PORT=:8080
     depends_on:
       migrate:
-        condition: service_completed_successfully  # Ждёт успешного завершения миграций
+        condition: service_completed_successfully 
       postgres:
         condition: service_healthy
     restart: unless-stopped

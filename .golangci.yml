@@ -4,11 +4,11 @@ run:
 
 linters:
   enable:
-    - goimports      # Форматирование + автоматическая сортировка импортов
-    - govet          # Официальные проверки компилятора (nil, формат, гонки)
-    - staticcheck    # Баги, устаревший API, неэффективный код
-    - errcheck       # Игнорирование ошибок (самая частая причина падений)
-    - unused         # Мёртвый код, неиспользуемые функции/переменные
+    - goimports      
+    - govet          
+    - staticcheck   
+    - errcheck    
+    - unused         
 
 linters-settings:
   goimports:

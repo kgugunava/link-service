@@ -19,10 +19,6 @@ import (
 	"github.com/kgugunava/link-service/internal/domain"
 )
 
-// =============================================================================
-// Мок сервиса
-// =============================================================================
-
 // mockURLService реализует handler.URLServiceInterface для тестов
 type mockURLService struct {
 	mock.Mock
@@ -38,12 +34,9 @@ func (m *mockURLService) GetOriginal(ctx context.Context, shortCode string) (str
 	return args.String(0), args.Error(1)
 }
 
-// =============================================================================
 // Тесты для POST /shorten
-// =============================================================================
 
 func TestURLHandler_Shorten(t *testing.T) {
-	// Отключаем вывод логов Gin в тестах
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
@@ -126,7 +119,6 @@ func TestURLHandler_Shorten(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			svc := new(mockURLService)
 			tt.mockSetup(svc)
 			h := NewURLHandler(svc, slog.Default())
@@ -137,10 +129,8 @@ func TestURLHandler_Shorten(t *testing.T) {
 			c, _ := gin.CreateTestContext(rec)
 			c.Request = req
 
-			// Act
 			h.Shorten(c)
 
-			// Assert
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 			if tt.expectedBody != nil {
 				tt.expectedBody(t, rec.Body.Bytes())
@@ -150,9 +140,7 @@ func TestURLHandler_Shorten(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Тесты для GET /:code
-// =============================================================================
+// Тесты для GET /original/:code
 
 func TestURLHandler_GetOriginal(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -249,27 +237,22 @@ func TestURLHandler_GetOriginal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			svc := new(mockURLService)
 			tt.mockSetup(svc)
 			h := NewURLHandler(svc, slog.Default())
 
-			// Формируем путь с параметром :code
 			path := "/" + tt.shortCode
 			req := httptest.NewRequest(http.MethodGet, path, nil)
 			rec := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(rec)
 			c.Request = req
 
-			// Важно: явно устанавливаем параметры пути для Gin
 			if tt.shortCode != "" {
 				c.Params = gin.Params{{Key: "code", Value: tt.shortCode}}
 			}
 
-			// Act
 			h.GetOriginal(c)
 
-			// Assert
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 			if tt.expectedBody != nil {
 				tt.expectedBody(t, rec.Body.Bytes())
@@ -279,9 +262,7 @@ func TestURLHandler_GetOriginal(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Вспомогательные тесты для функций валидации
-// =============================================================================
+// Helpers
 
 func TestIsValidShortCode(t *testing.T) {
 	tests := []struct {
