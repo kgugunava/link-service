@@ -65,16 +65,16 @@ func (h *URLHandler) Shorten(c *gin.Context) {
 }
 
 func (h *URLHandler) GetOriginal(c *gin.Context) {
-	shortCode := c.Param("code")
+	shortCode := c.Param("short_url")
 	if shortCode == "" {
-		h.logger.Warn("missing code parameter")
-		respondError(c, http.StatusBadRequest, "missing_code", "short code is required")
+		h.logger.Warn("missing short_url parameter")
+		respondError(c, http.StatusBadRequest, "missing_short_url", "short_url is required")
 		return
 	}
 
 	if !isValidShortCode(shortCode) {
-		h.logger.Warn("invalid code format", "code", shortCode)
-		respondError(c, http.StatusBadRequest, "invalid_code", "short code must be 10 characters [A-Za-z0-9_]")
+		h.logger.Warn("invalid short_url format", "code", shortCode)
+		respondError(c, http.StatusBadRequest, "invalid_short_url", "short_url must be 10 characters [A-Za-z0-9_]")
 		return
 	}
 
@@ -83,12 +83,12 @@ func (h *URLHandler) GetOriginal(c *gin.Context) {
 		if h.handleServiceError(c, err, "get_original") {
 			return
 		}
-		h.logger.Error("unexpected error", "operation", "get_original", "code", shortCode, "error", err)
+		h.logger.Error("unexpected error", "operation", "get_original", "short_url", shortCode, "error", err)
 		respondError(c, http.StatusInternalServerError, "internal_error", "failed to resolve URL")
 		return
 	}
 
-	h.logger.Info("original url resolved", "short_code", shortCode, "original_url", originalURL)
+	h.logger.Info("original url resolved", "short_url", shortCode, "original_url", originalURL)
 	c.JSON(http.StatusOK, model.URLOriginalURLGetResponse{
 		OriginalURL: originalURL,
 	})
