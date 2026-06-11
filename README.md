@@ -100,6 +100,12 @@ docker compose down -v
 docker compose up --build
 ```
 
+## Публикация Docker-образа
+Образ приложения автоматически публикуется в Github Container Registry при каждом обновлении ветки `main`.
+
+Для скачивания Docker-образа из реестра используется команда
+`docker pull ghcr.io/kgugunava/link-service:latest`
+
 ## API
 
 ### POST /api/shorten
