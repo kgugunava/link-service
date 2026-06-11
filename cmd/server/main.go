@@ -21,16 +21,23 @@ import (
 	"github.com/kgugunava/link-service/internal/utils"
 )
 
-func main() {
-	logger := setupLogger()
+const shutdownTimeout = 10 * time.Second
 
+func main() {
 	cfg, err := config.Parse()
 	if err != nil {
-		logger.Error("failed to parse config", "error", err)
+		fmt.Fprintf(os.Stderr, "failed to parse config: %v\n", err)
 		os.Exit(1)
 	}
 
-	logger.Info("starting server", "storage", cfg.StorageType, "port", cfg.Port)
+	logger := setupLogger(cfg)
+
+	logger.Info("starting server",
+		"storage", cfg.StorageType,
+		"port", cfg.Port,
+		"url_ttl", cfg.URLTTL,
+		"cleaner_interval", cfg.CleanerInterval,
+	)
 
 	repo, cleanup, err := initRepository(context.Background(), cfg, logger)
 	if err != nil {
@@ -40,9 +47,16 @@ func main() {
 	defer cleanup()
 
 	urlGenerator := utils.NewGenerator(logger)
-	urlService := service.NewUrlService(repo, urlGenerator, logger)
+	urlService := service.NewUrlService(repo, urlGenerator, logger, cfg.URLTTL)
 	urlHandler := handler.NewURLHandler(urlService, logger)
 	router := api.NewRouter(urlHandler)
+
+	cleanerCtx, cleanerCancel := context.WithCancel(context.Background())
+	defer cleanerCancel()
+
+	cleaner := service.NewCleaner(repo, cfg.CleanerInterval, logger)
+	go cleaner.Run(cleanerCtx)
+	logger.Info("cleaner started", "interval", cfg.CleanerInterval)
 
 	server := &http.Server{
 		Addr:    cfg.Port,
@@ -59,19 +73,24 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	sig := <-quit
+	logger.Info("shutdown signal received", "signal", sig.String())
 
 	logger.Info("shutting down server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Error("server shutdown failed", "error", err)
-		os.Exit(1)
+	} else {
+		logger.Info("server stopped")
 	}
 
-	logger.Info("server stopped")
+	cleaner.Stop()
+	logger.Info("cleaner stopped")
+
+	logger.Info("shutdown completed")
 }
 
 func initRepository(ctx context.Context, cfg *config.Config, logger *slog.Logger) (service.URLRepositoryInterface, func(), error) {
@@ -93,14 +112,15 @@ func initRepository(ctx context.Context, cfg *config.Config, logger *slog.Logger
 	}
 }
 
-func setupLogger() *slog.Logger {
+// setupLogger настраивает структурированный логгер на основе конфига
+func setupLogger(cfg *config.Config) *slog.Logger {
 	level := slog.LevelInfo
-	if os.Getenv("DEBUG") == "1" {
+	if cfg.Debug {
 		level = slog.LevelDebug
 	}
 
 	var handler slog.Handler
-	if os.Getenv("LOG_FORMAT") == "json" {
+	if cfg.LogFormat == "json" {
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	} else {
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

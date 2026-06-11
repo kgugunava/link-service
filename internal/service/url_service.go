@@ -7,32 +7,42 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/kgugunava/link-service/internal/domain"
 	"github.com/kgugunava/link-service/internal/utils"
 )
 
-const maxCollisionRetries = 3
+const (
+	maxCollisionRetries = 3
+	defaultTTL          = 30 * 24 * time.Hour
+)
 
 type URLRepositoryInterface interface {
-	Save(ctx context.Context, originalURL, shortCode string) error
-	GetByShortCode(ctx context.Context, shortCode string) (string, error)
+	Save(ctx context.Context, url *domain.URL) error
+	GetByShortCode(ctx context.Context, shortCode string) (*domain.URL, error)
+	DeleteExpired(ctx context.Context) (int64, error)
 }
 
 type URLService struct {
 	urlRepo      URLRepositoryInterface
 	urlGenerator *utils.Generator
 	logger       *slog.Logger
+	ttl          time.Duration
 }
 
-func NewUrlService(urlRepo URLRepositoryInterface, urlGenerator *utils.Generator, logger *slog.Logger) *URLService {
+func NewUrlService(urlRepo URLRepositoryInterface, urlGenerator *utils.Generator, logger *slog.Logger, ttl time.Duration) *URLService {
 	if logger == nil {
 		logger = slog.Default()
+	}
+	if ttl <= 0 {
+		ttl = defaultTTL
 	}
 	return &URLService{
 		urlRepo:      urlRepo,
 		urlGenerator: urlGenerator,
 		logger:       logger,
+		ttl:          ttl,
 	}
 }
 
@@ -66,7 +76,14 @@ func (s *URLService) generateWithFallback(ctx context.Context, originalURL strin
 			s.logger.Debug("retrying with salted url", "original_url", originalURL, "attempt", attempt, "salted_url", saltedURL)
 		}
 
-		err := s.urlRepo.Save(ctx, originalURL, shortCode)
+		urlModel := &domain.URL{
+			OriginalURL: originalURL,
+			ShortCode:   shortCode,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(s.ttl),
+		}
+
+		err := s.urlRepo.Save(ctx, urlModel)
 		if err == nil {
 			return shortCode, nil
 		}
@@ -87,6 +104,10 @@ func isShortCodeCollision(err error) bool {
 	}
 
 	errStr := err.Error()
+
+	if strings.Contains(errStr, "short_code_collision") {
+		return true
+	}
 
 	if strings.Contains(errStr, "duplicate key value violates unique constraint") &&
 		strings.Contains(errStr, "short_code") {
@@ -113,7 +134,7 @@ func (s *URLService) GetOriginal(ctx context.Context, shortCode string) (string,
 		return "", domain.ErrInvalidCode
 	}
 
-	original, err := s.urlRepo.GetByShortCode(ctx, shortCode)
+	urlModel, err := s.urlRepo.GetByShortCode(ctx, shortCode)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			s.logger.Debug("not found", "short_code", shortCode)
@@ -123,8 +144,28 @@ func (s *URLService) GetOriginal(ctx context.Context, shortCode string) (string,
 		return "", err
 	}
 
-	s.logger.Info("original url retrieved", "short_code", shortCode, "original_url", original)
-	return original, nil
+	if !urlModel.ExpiresAt.IsZero() && time.Now().After(urlModel.ExpiresAt) {
+		s.logger.Debug("url expired", "short_code", shortCode, "expires_at", urlModel.ExpiresAt)
+		return "", domain.ErrNotFound
+	}
+
+	s.logger.Info("original url retrieved", "short_code", shortCode, "original_url", urlModel.OriginalURL)
+	return urlModel.OriginalURL, nil
+}
+
+func (s *URLService) CleanupExpired(ctx context.Context) (int64, error) {
+	s.logger.Debug("cleanup expired started")
+
+	deleted, err := s.urlRepo.DeleteExpired(ctx)
+	if err != nil {
+		s.logger.Error("cleanup failed", "error", err)
+		return 0, err
+	}
+
+	if deleted > 0 {
+		s.logger.Info("cleanup completed", "deleted", deleted)
+	}
+	return deleted, nil
 }
 
 func validateUrl(raw string) error {

@@ -71,7 +71,7 @@ func (g *Generator) Generate(originalURL string) string {
 	return shortCode
 }
 
-// deterministicShuffle перемешивает срез детерминированно на основе seed
+// deterministicShuffle перемешивает срез детерминированно
 func deterministicShuffle(items []int, seed uint64) []int {
 	result := make([]int, len(items))
 	copy(result, items)
@@ -86,7 +86,6 @@ func deterministicShuffle(items []int, seed uint64) []int {
 }
 
 // ValidateShortCode проверяет, что код содержит хотя бы по одному символу каждого типа
-// Можно использовать как дополнительную проверку в тестах или на уровне БД
 func ValidateShortCode(code string) bool {
 	if len(code) != codeLen {
 		return false
