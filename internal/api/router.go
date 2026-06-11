@@ -60,7 +60,7 @@ func getRoutes(URLHandler *handler.URLHandler) []Route {
 		{
 			"GetOriginalURL",
 			http.MethodGet,
-			"/api/original/:code",
+			"/api/original/:short_url",
 			URLHandler.GetOriginal,
 		},
 	}
