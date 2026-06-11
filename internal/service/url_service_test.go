@@ -112,7 +112,7 @@ func TestURLService_Shorten(t *testing.T) {
 
 	t.Run("sets correct TTL on URL model", func(t *testing.T) {
 		repo := new(mockURLRepo)
-		ttl := 7 * 24 * time.Hour 
+		ttl := 7 * 24 * time.Hour
 
 		repo.On("Save", ctx, mock.MatchedBy(func(u *domain.URL) bool {
 			diff := u.ExpiresAt.Sub(u.CreatedAt)
@@ -189,7 +189,7 @@ func TestURLService_Shorten_CollisionFallback(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "connection refused")
 		assert.Empty(t, code)
-		repo.AssertNumberOfCalls(t, "Save", 1) 
+		repo.AssertNumberOfCalls(t, "Save", 1)
 	})
 
 	t.Run("detects PostgreSQL collision error format", func(t *testing.T) {
@@ -320,7 +320,7 @@ func TestURLService_GetOriginal(t *testing.T) {
 			OriginalURL: "https://almost.com",
 			ShortCode:   "Almost0001",
 			CreatedAt:   time.Now().Add(-time.Hour),
-			ExpiresAt:   time.Now().Add(time.Second), 
+			ExpiresAt:   time.Now().Add(time.Second),
 		}
 		repo.On("GetByShortCode", ctx, "Almost0001").Return(urlModel, nil).Once()
 

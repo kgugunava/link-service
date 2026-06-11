@@ -122,10 +122,10 @@ func TestValidateShortCode(t *testing.T) {
 		expected bool
 	}{
 		{"valid mixed case", "Ab3_xK9mLp", true},
-		{"valid all types", "Aa0_BbCcDd", true},           
-		{"valid underscore at end", "Aa1_bcd_ef", true},  
-		{"valid underscore at start", "_Aa1bcdefg", true}, 
-		{"valid minimal types", "Aa0_______", true},       
+		{"valid all types", "Aa0_BbCcDd", true},
+		{"valid underscore at end", "Aa1_bcd_ef", true},
+		{"valid underscore at start", "_Aa1bcdefg", true},
+		{"valid minimal types", "Aa0_______", true},
 
 		// неверная длина
 		{"too short", "Ab3_xK9mL", false},  // 9 символов

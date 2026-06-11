@@ -155,7 +155,7 @@ func TestURLPostgresRepository_Save(t *testing.T) {
 		now := time.Now().Truncate(time.Microsecond)
 		url := &domain.URL{
 			OriginalURL: "https://example.com/path?query=1",
-			ShortCode:   "Cd5_yL8nRq", 
+			ShortCode:   "Cd5_yL8nRq",
 			CreatedAt:   now,
 			ExpiresAt:   now.Add(24 * time.Hour),
 		}
@@ -177,7 +177,7 @@ func TestURLPostgresRepository_Save(t *testing.T) {
 
 		url := &domain.URL{
 			OriginalURL: "https://example.com",
-			ShortCode:   "Ef7_zM0pSt", 
+			ShortCode:   "Ef7_zM0pSt",
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Time{},
 		}
@@ -196,7 +196,7 @@ func TestURLPostgresRepository_Save(t *testing.T) {
 
 		url := &domain.URL{
 			OriginalURL: "https://example.com",
-			ShortCode:   "bad-code!", 
+			ShortCode:   "bad-code!",
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now().Add(time.Hour),
 		}
@@ -211,7 +211,7 @@ func TestURLPostgresRepository_Save(t *testing.T) {
 
 		url := &domain.URL{
 			OriginalURL: "https://example.com",
-			ShortCode:   "abcdefghij", 
+			ShortCode:   "abcdefghij",
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now().Add(time.Hour),
 		}
@@ -266,7 +266,7 @@ func TestURLPostgresRepository_GetByShortCode(t *testing.T) {
 
 		url := &domain.URL{
 			OriginalURL: "https://expired.com",
-			ShortCode:   "Gh1_aB2cDe", 
+			ShortCode:   "Gh1_aB2cDe",
 			CreatedAt:   time.Now().Add(-2 * time.Hour),
 			ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		}
@@ -291,17 +291,17 @@ func TestURLPostgresRepository_DeleteExpired(t *testing.T) {
 
 		expired1 := &domain.URL{
 			OriginalURL: "https://expired1.com",
-			ShortCode:   "Ij3_kL4mNo", 
+			ShortCode:   "Ij3_kL4mNo",
 			CreatedAt:   time.Now().Add(-2 * time.Hour),
 			ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		}
 		expired2 := &domain.URL{
 			OriginalURL: "https://expired2.com",
-			ShortCode:   "Pq5_rS6tUv", 
+			ShortCode:   "Pq5_rS6tUv",
 			CreatedAt:   time.Now().Add(-90 * time.Minute),
 			ExpiresAt:   time.Now().Add(-30 * time.Minute),
 		}
-		valid := newTestURL("https://valid.com", "Wx7_yZ8aBc", time.Hour) 
+		valid := newTestURL("https://valid.com", "Wx7_yZ8aBc", time.Hour)
 
 		require.NoError(t, repo.Save(ctx, expired1))
 		require.NoError(t, repo.Save(ctx, expired2))
@@ -327,7 +327,7 @@ func TestURLPostgresRepository_DeleteExpired(t *testing.T) {
 
 		noTTL := &domain.URL{
 			OriginalURL: "https://no-ttl.com",
-			ShortCode:   "De9_fG0hIj", 
+			ShortCode:   "De9_fG0hIj",
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Time{},
 		}
@@ -369,7 +369,7 @@ func TestURLPostgresRepository_DeleteExpired(t *testing.T) {
 
 		expired := &domain.URL{
 			OriginalURL: "https://expired.com",
-			ShortCode:   "Yz5_aB6cDe", 
+			ShortCode:   "Yz5_aB6cDe",
 			CreatedAt:   time.Now().Add(-2 * time.Hour),
 			ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		}
