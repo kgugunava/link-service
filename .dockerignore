@@ -1,0 +1,8 @@
+.git
+.gitignore
+.env
+.env.local
+*.md
+!README.md
+load_test.js
+Makefile
