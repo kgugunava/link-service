@@ -2,12 +2,13 @@ package memory
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"testing"
-	"log/slog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/kgugunava/link-service/internal/domain"
 )
 
@@ -71,14 +72,14 @@ func TestUrlMemoryRepository_Concurrency(t *testing.T) {
 	// Параллельные записи и чтения
 	for i := 0; i < goroutines; i++ {
 		wg.Add(2)
-		
+
 		go func(id int) {
 			defer wg.Done()
 			url := "https://example.com/" + string(rune('a'+id%26))
 			code := "Code" + string(rune('A'+id%26)) + "123456"
 			errs <- repo.Save(ctx, url, code)
 		}(i)
-		
+
 		go func(id int) {
 			defer wg.Done()
 			code := "Code" + string(rune('A'+id%26)) + "123456"
@@ -105,7 +106,6 @@ func TestUrlMemoryRepository_Idempotency_GetAfterSave(t *testing.T) {
 	url := "https://test.com/path"
 	code := "TestIdemp123"
 
-	// Save → Get → Save again → Get again
 	err := repo.Save(ctx, url, code)
 	require.NoError(t, err)
 

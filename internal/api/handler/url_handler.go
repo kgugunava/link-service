@@ -120,10 +120,6 @@ func respondError(c *gin.Context, status int, code, message string) {
 	})
 }
 
-func respondJSON(c *gin.Context, status int, data any) {
-	c.JSON(status, data)
-}
-
 func validateShortenRequest(req *model.URLShortenPostRequest) error {
 	if req.URL == "" {
 		return errors.New("url field is required")

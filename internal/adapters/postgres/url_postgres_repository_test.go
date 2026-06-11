@@ -19,7 +19,7 @@ import (
 // setupTestDB запускает PostgreSQL в Docker и возвращает pool + cleanup
 func setupTestDB(t *testing.T) (*pgxpool.Pool, func()) {
 	ctx := context.Background()
-	
+
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:15-alpine",
 		postgres.WithDatabase("testdb"),
@@ -87,7 +87,7 @@ func TestUrlPostgresRepository_Save(t *testing.T) {
 
 	t.Run("prevents duplicate short_code via UNIQUE constraint", func(t *testing.T) {
 		err := repo.Save(ctx, "https://different.com", "Ab3_xK9mLp") // код уже занят
-		_ = err 
+		_ = err
 	})
 }
 

@@ -8,10 +8,9 @@ import (
 
 // Config хранит параметры запуска сервиса
 type Config struct {
-	StorageType string // memory | postgres
-	PgDSN       string // PostgreSQL connection string
-	Port        string // порт HTTP-сервера, например ":8080"
-	// BaseURL     string // домен коротких ссылок, например "https://short.link"
+	StorageType string
+	PgDSN       string
+	Port        string
 }
 
 // Parse считывает конфигурацию из флагов командной строки и env-переменных.
@@ -21,7 +20,6 @@ func Parse() (*Config, error) {
 	storage := flag.String("storage", getEnv("STORAGE_TYPE", "memory"), "storage type: memory|postgres")
 	pgDSN := flag.String("pg-dsn", getEnv("PG_DSN", "postgres://user:pass@localhost:5432/shortener?sslmode=disable"), "PostgreSQL DSN")
 	port := flag.String("port", getEnv("PORT", ":8080"), "HTTP server port")
-	// baseURL := flag.String("base-url", getEnv("BASE_URL", "http://localhost:8080"), "base URL for short links")
 	flag.Parse()
 
 	// Валидация
@@ -33,7 +31,6 @@ func Parse() (*Config, error) {
 		StorageType: *storage,
 		PgDSN:       *pgDSN,
 		Port:        *port,
-		// BaseURL:     *baseURL,
 	}, nil
 }
 

@@ -2,32 +2,32 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
-	"fmt"
 
 	"github.com/kgugunava/link-service/internal/domain"
 )
 
-type UrlMemoryRepository struct {
+type URLMemoryRepository struct {
 	mu              sync.RWMutex
 	originalToShort map[string]string
 	shortToOriginal map[string]string
 	logger          *slog.Logger
 }
 
-func NewUrlMemoryRepository(logger *slog.Logger) *UrlMemoryRepository {
+func NewUrlMemoryRepository(logger *slog.Logger) *URLMemoryRepository {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &UrlMemoryRepository{
+	return &URLMemoryRepository{
 		originalToShort: make(map[string]string),
 		shortToOriginal: make(map[string]string),
 		logger:          logger,
 	}
 }
 
-func (r *UrlMemoryRepository) Save(ctx context.Context, originalUrl, shortCode string) error {
+func (r *URLMemoryRepository) Save(ctx context.Context, originalUrl, shortCode string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -47,7 +47,7 @@ func (r *UrlMemoryRepository) Save(ctx context.Context, originalUrl, shortCode s
 	return nil
 }
 
-func (r *UrlMemoryRepository) GetByShortCode(ctx context.Context, shortCode string) (string, error) {
+func (r *URLMemoryRepository) GetByShortCode(ctx context.Context, shortCode string) (string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

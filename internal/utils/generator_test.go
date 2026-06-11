@@ -124,30 +124,30 @@ func TestValidateShortCode(t *testing.T) {
 		// Валидные коды: ровно 10 символов + присутствуют все 4 типа символов
 		{"valid mixed case", "Ab3_xK9mLp", true},
 		{"valid all types", "Aa0_BbCcDd", true},           // 10 chars: A,a,0,_,B,b,C,c,D,d
-		{"valid underscore at end", "Aa1_bcd_ef", true},    // 10 chars: A,a,1,_,b,c,d,_,e,f
-		{"valid underscore at start", "_Aa1bcdefg", true},  // 10 chars: _,A,a,1,b,c,d,e,f,g
-		{"valid minimal types", "Aa0_______", true},        // 10 chars: минимально 1 каждого типа + 6 подчеркиваний
-		
+		{"valid underscore at end", "Aa1_bcd_ef", true},   // 10 chars: A,a,1,_,b,c,d,_,e,f
+		{"valid underscore at start", "_Aa1bcdefg", true}, // 10 chars: _,A,a,1,b,c,d,e,f,g
+		{"valid minimal types", "Aa0_______", true},       // 10 chars: минимально 1 каждого типа + 6 подчеркиваний
+
 		// Неверная длина
-		{"too short", "Ab3_xK9mL", false},    // 9 символов
-		{"too long", "Ab3_xK9mLpX", false},   // 11 символов
-		
+		{"too short", "Ab3_xK9mL", false},  // 9 символов
+		{"too long", "Ab3_xK9mLpX", false}, // 11 символов
+
 		// Недостающие типы символов
-		{"missing lowercase", "AB3_XK9MLP", false},   // нет a-z
-		{"missing uppercase", "ab3_xk9mlp", false},   // нет A-Z
-		{"missing digit", "Abc_xKpMnQ", false},       // нет 0-9
-		{"missing underscore", "Ab3xK9mLpQ", false},  // нет _
-		
+		{"missing lowercase", "AB3_XK9MLP", false},  // нет a-z
+		{"missing uppercase", "ab3_xk9mlp", false},  // нет A-Z
+		{"missing digit", "Abc_xKpMnQ", false},      // нет 0-9
+		{"missing underscore", "Ab3xK9mLpQ", false}, // нет _
+
 		// Недопустимые символы
 		{"has hyphen", "Ab3-xK9mLp", false},
 		{"has dot", "Ab3.xK9mLp", false},
 		{"has space", "Ab3 xK9mLp", false},
 		{"has special char", "Ab3!xK9mLp", false},
-		
+
 		// Пустой и другие
 		{"empty", "", false},
 		{"cyrillic", "Абвгдежзик", false},
-		
+
 		// Только один тип символов
 		{"only underscores", "__________", false},
 		{"only digits", "1234567890", false},

@@ -14,60 +14,60 @@ import (
 
 const maxCollisionRetries = 3
 
-type UrlRepositoryInterface interface {
-	Save(ctx context.Context, originalUrl, shortCode string) error
+type URLRepositoryInterface interface {
+	Save(ctx context.Context, originalURL, shortCode string) error
 	GetByShortCode(ctx context.Context, shortCode string) (string, error)
 }
 
-type UrlService struct {
-	urlRepo      UrlRepositoryInterface
+type URLService struct {
+	urlRepo      URLRepositoryInterface
 	urlGenerator *utils.Generator
 	logger       *slog.Logger
 }
 
-func NewUrlService(urlRepo UrlRepositoryInterface, urlGenerator *utils.Generator, logger *slog.Logger) *UrlService {
+func NewUrlService(urlRepo URLRepositoryInterface, urlGenerator *utils.Generator, logger *slog.Logger) *URLService {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &UrlService{
+	return &URLService{
 		urlRepo:      urlRepo,
 		urlGenerator: urlGenerator,
 		logger:       logger,
 	}
 }
 
-func (s *UrlService) Shorten(ctx context.Context, originalUrl string) (string, error) {
-	s.logger.Debug("shorten started", "original_url", originalUrl)
+func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, error) {
+	s.logger.Debug("shorten started", "original_url", originalURL)
 
-	if err := validateUrl(originalUrl); err != nil {
-		s.logger.Warn("invalid url", "original_url", originalUrl, "error", err)
+	if err := validateUrl(originalURL); err != nil {
+		s.logger.Warn("invalid url", "original_url", originalURL, "error", err)
 		return "", domain.ErrInvalidURL
 	}
 
-	shortCode, err := s.generateWithFallback(ctx, originalUrl)
+	shortCode, err := s.generateWithFallback(ctx, originalURL)
 	if err != nil {
-		s.logger.Error("failed to generate short code", "original_url", originalUrl, "error", err)
+		s.logger.Error("failed to generate short code", "original_url", originalURL, "error", err)
 		return "", err
 	}
 
-	s.logger.Info("url shortened", "original_url", originalUrl, "short_code", shortCode)
+	s.logger.Info("url shortened", "original_url", originalURL, "short_code", shortCode)
 	return shortCode, nil
 }
 
 // generateWithFallback generates a short code with collision retry logic
-func (s *UrlService) generateWithFallback(ctx context.Context, originalUrl string) (string, error) {
+func (s *URLService) generateWithFallback(ctx context.Context, originalURL string) (string, error) {
 	for attempt := 0; attempt < maxCollisionRetries; attempt++ {
 		var shortCode string
 
 		if attempt == 0 {
-			shortCode = s.urlGenerator.Generate(originalUrl)
+			shortCode = s.urlGenerator.Generate(originalURL)
 		} else {
-			saltedURL := fmt.Sprintf("%s#retry_%d", originalUrl, attempt)
+			saltedURL := fmt.Sprintf("%s#retry_%d", originalURL, attempt)
 			shortCode = s.urlGenerator.Generate(saltedURL)
-			s.logger.Debug("retrying with salted url", "original_url", originalUrl, "attempt", attempt, "salted_url", saltedURL)
+			s.logger.Debug("retrying with salted url", "original_url", originalURL, "attempt", attempt, "salted_url", saltedURL)
 		}
 
-		err := s.urlRepo.Save(ctx, originalUrl, shortCode)
+		err := s.urlRepo.Save(ctx, originalURL, shortCode)
 		if err == nil {
 			return shortCode, nil
 		}
@@ -107,7 +107,7 @@ func isShortCodeCollision(err error) bool {
 	return false
 }
 
-func (s *UrlService) GetOriginal(ctx context.Context, shortCode string) (string, error) {
+func (s *URLService) GetOriginal(ctx context.Context, shortCode string) (string, error) {
 	s.logger.Debug("get_original started", "short_code", shortCode)
 
 	if !isValidShortCode(shortCode) {

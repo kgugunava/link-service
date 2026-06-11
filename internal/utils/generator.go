@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	alphabet  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-	base      = uint64(len(alphabet)) // 63
-	codeLen   = 10
-	upperStart = 0  // A-Z: 0-25
+	alphabet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+	base       = uint64(len(alphabet)) // 63
+	codeLen    = 10
+	upperStart = 0 // A-Z: 0-25
 	upperEnd   = 25
 	lowerStart = 26 // a-z: 26-51
 	lowerEnd   = 51

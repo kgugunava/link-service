@@ -3,15 +3,15 @@ package service
 import (
 	"context"
 	"errors"
-	"testing"
 	"log/slog"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kgugunava/link-service/internal/utils"
 	"github.com/kgugunava/link-service/internal/domain"
+	"github.com/kgugunava/link-service/internal/utils"
 )
 
 // mockRepo реализует service.UrlRepositoryInterface
@@ -61,7 +61,7 @@ func TestUrlService_Shorten(t *testing.T) {
 		_, err := svc.Shorten(ctx, "https://example.com")
 
 		assert.Error(t, err)
-		assert.Equal(t, "db failed", err.Error()) 
+		assert.Equal(t, "db failed", err.Error())
 		repo.AssertExpectations(t)
 	})
 }
@@ -84,7 +84,7 @@ func TestUrlService_GetOriginal(t *testing.T) {
 
 	t.Run("not found returns ErrNotFound", func(t *testing.T) {
 		repo := new(mockRepo)
-		repo.On("GetByShortCode", ctx, "NotExist12").Return("", domain.ErrNotFound) 
+		repo.On("GetByShortCode", ctx, "NotExist12").Return("", domain.ErrNotFound)
 
 		svc := NewUrlService(repo, gen, nil)
 		_, err := svc.GetOriginal(ctx, "NotExist12")

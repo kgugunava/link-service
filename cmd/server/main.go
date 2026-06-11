@@ -74,7 +74,7 @@ func main() {
 	logger.Info("server stopped")
 }
 
-func initRepository(ctx context.Context, cfg *config.Config, logger *slog.Logger) (service.UrlRepositoryInterface, func(), error) {
+func initRepository(ctx context.Context, cfg *config.Config, logger *slog.Logger) (service.URLRepositoryInterface, func(), error) {
 	switch cfg.StorageType {
 	case "memory":
 		logger.Info("using in-memory storage")
@@ -86,7 +86,7 @@ func initRepository(ctx context.Context, cfg *config.Config, logger *slog.Logger
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to connect to postgres: %w", err)
 		}
-		return postgres.NewUrlPostgresRepository(pool, logger), func() { pool.Close() }, nil
+		return postgres.NewURLPostgresRepository(pool, logger), func() { pool.Close() }, nil
 
 	default:
 		return nil, nil, fmt.Errorf("unknown storage type: %s", cfg.StorageType)

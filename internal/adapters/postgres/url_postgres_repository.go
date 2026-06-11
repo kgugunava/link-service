@@ -2,32 +2,33 @@ package postgres
 
 import (
 	"context"
-	"log/slog"
-	"fmt"
 	"errors"
+	"fmt"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/kgugunava/link-service/internal/domain"
 )
 
-type UrlPostgresRepository struct {
+type URLPostgresRepository struct {
 	pool   *pgxpool.Pool
 	logger *slog.Logger
 }
 
-func NewUrlPostgresRepository(pool *pgxpool.Pool, logger *slog.Logger) *UrlPostgresRepository {
+func NewURLPostgresRepository(pool *pgxpool.Pool, logger *slog.Logger) *URLPostgresRepository {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &UrlPostgresRepository{
+	return &URLPostgresRepository{
 		pool:   pool,
 		logger: logger,
 	}
 }
 
-func (r *UrlPostgresRepository) Save(ctx context.Context, originalUrl, shortCode string) error {
+func (r *URLPostgresRepository) Save(ctx context.Context, originalUrl, shortCode string) error {
 	const q = `
 		INSERT INTO urls (original_url, short_code)
 		VALUES ($1, $2)
@@ -54,7 +55,7 @@ func (r *UrlPostgresRepository) Save(ctx context.Context, originalUrl, shortCode
 	return nil
 }
 
-func (r *UrlPostgresRepository) GetByShortCode(ctx context.Context, shortCode string) (string, error) {
+func (r *URLPostgresRepository) GetByShortCode(ctx context.Context, shortCode string) (string, error) {
 	const q = `SELECT original_url FROM urls WHERE short_code = $1`
 
 	r.logger.Debug("executing select", "short_code", shortCode)

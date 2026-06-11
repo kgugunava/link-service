@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
